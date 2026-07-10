@@ -1,0 +1,16 @@
+{
+  "name": "orbit",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A scalable social feed platform portfolio project with TypeScript, Python ranking, and C++ feed simulation.",
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps/web run dev",
+    "build": "npm --workspace apps/web run build",
+    "lint": "npm --workspace apps/web run lint",
+    "test:python": "python -m unittest discover services/ranking-python/tests",
+    "build:cpp": "cmake -S services/feed-sim-cpp -B services/feed-sim-cpp/build && cmake --build services/feed-sim-cpp/build"
+  }
+}
