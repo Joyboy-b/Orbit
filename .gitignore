@@ -11,3 +11,6 @@ coverage
 Thumbs.db
 __pycache__/
 *.py[cod]
+
+# Local SQLite state
+apps/web/data/

@@ -485,3 +485,145 @@ button:disabled {
     flex-direction: column;
   }
 }
+
+.topbar-actions,
+.auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-actions > a:not(.primary-button) {
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 700;
+  padding: 0 8px;
+}
+
+.auth-actions .primary-button {
+  text-decoration: none;
+  min-height: 42px;
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.auth-panel {
+  width: min(100%, 440px);
+  padding: 30px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.auth-brand {
+  color: var(--blue);
+  text-decoration: none;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.auth-panel h1 {
+  margin: 24px 0 8px;
+  font-size: 28px;
+}
+
+.auth-panel > p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.auth-form input {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  outline-color: var(--blue);
+}
+
+.auth-submit {
+  justify-content: center;
+  border: 0;
+}
+
+.auth-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 14px;
+}
+
+.auth-switch,
+.demo-note {
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.auth-switch a {
+  color: var(--blue);
+  font-weight: 700;
+}
+
+.demo-note {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 720px) {
+  .topbar-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .auth-actions > a:not(.primary-button) {
+    display: none;
+  }
+}
+
+.comment-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.comment-form input {
+  min-width: 0;
+  flex: 1;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  outline-color: var(--blue);
+}
+
+.comment-form .primary-button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 520px) {
+  .comment-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

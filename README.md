@@ -29,7 +29,7 @@ Orbit exposes a small typed Next.js API boundary for the demo, keeping product m
 | `POST /api/posts` | Validates and creates a post (1-500 characters). |
 | `POST /api/posts/:postId/reactions` | Toggles the viewer reaction and returns the authoritative count. |
 
-The current store is intentionally in-memory so the repository runs with no services. Its interface is designed to be replaced by a PostgreSQL-backed adapter without changing the client contract.
+The current store uses a local SQLite database at `apps/web/data/orbit.db`, created automatically on first run. Its feed-store interface is designed to migrate to PostgreSQL without changing the client contract.
 
 ## What It Includes
 
@@ -79,7 +79,7 @@ The MVP uses **fanout-on-read**: load the viewer's graph, find posts they can se
 | Product application | Next.js 16, React 19, TypeScript | Social UI and product workflows |
 | Ranking prototype | Python | Experiment-friendly, testable feed scoring |
 | Systems simulation | C++ and CMake | Fanout and performance tradeoff exploration |
-| Planned data layer | PostgreSQL, Prisma, Auth.js | Identity, relationships, visibility, durable writes |
+| Persistence and auth | SQLite via Node, bcryptjs, httpOnly sessions | Users, posts, relationships, visibility, and durable writes |
 | Planned infrastructure | Redis-compatible cache and background jobs | Feed windows, notifications, trending, async work |
 
 ## Quick Start

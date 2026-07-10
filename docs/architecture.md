@@ -21,7 +21,7 @@ The web application exposes typed route handlers for the demo:
 - `POST /api/posts` validates and creates a post.
 - `POST /api/posts/:postId/reactions` toggles a viewer reaction and returns the authoritative count.
 
-The current repository is in-memory to keep local setup frictionless. The route handlers depend on a small feed-store interface, so a PostgreSQL implementation can replace it without changing the client-facing contract.
+The current repository uses a local SQLite database created automatically at `apps/web/data/orbit.db`. The route handlers depend on a small feed-store interface, so a PostgreSQL implementation can replace it without changing the client-facing contract.
 ## Data Model
 
 Core entities:

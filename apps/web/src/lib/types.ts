@@ -39,6 +39,8 @@ export type RankedPost = Post & {
 
 export type FeedPost = RankedPost & {
   reacted: boolean;
+  reposted: boolean;
+  saved: boolean;
 };
 
 export type FeedMode = "ranked" | "latest";
