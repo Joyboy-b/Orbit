@@ -87,3 +87,8 @@ Background work candidates:
 ## System Boundaries
 
 The TypeScript app owns product workflows. Python owns ranking experiments. C++ owns performance simulations where memory layout, graph traversal, and latency modeling matter.
+
+
+## Authentication
+
+Orbit uses bcrypt password hashes and random, hashed session tokens stored in SQLite. The raw session token exists only in an httpOnly cookie. Expired sessions are deleted when encountered, and mutations require a valid current session.

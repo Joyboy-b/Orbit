@@ -29,6 +29,11 @@ Orbit exposes a small typed Next.js API boundary for the demo, keeping product m
 | `POST /api/posts` | Validates and creates a post (1-500 characters). |
 | `POST /api/posts/:postId/reactions` | Toggles the viewer reaction and returns the authoritative count. |
 
+| `POST /api/auth/login` | Creates a secure httpOnly session for an existing account. |
+| `POST /api/auth/signup` | Validates credentials, creates an account, and signs the user in. |
+| `POST /api/auth/logout` | Revokes the current session. |
+| `GET /api/auth/me` | Returns the current session identity. |
+
 The current store uses a local SQLite database at `apps/web/data/orbit.db`, created automatically on first run. Its feed-store interface is designed to migrate to PostgreSQL without changing the client contract.
 
 ## What It Includes
