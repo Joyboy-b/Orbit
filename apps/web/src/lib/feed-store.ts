@@ -79,3 +79,23 @@ export function createComment(postId: string, userId: string, body: string) {
   database.prepare("INSERT INTO comments (id, body, user_id, post_id, created_at) VALUES (?, ?, ?, ?, ?)").run(id, body, userId, postId, new Date().toISOString());
   return { id, postId, body };
 }
+
+export function getDiscoverUsers(viewerId?: string) {
+  return database.prepare(`SELECT users.id, users.name, users.handle, users.affinity,
+    (SELECT COUNT(*) FROM follows WHERE following_id = users.id) AS follower_count,
+    CASE WHEN EXISTS (SELECT 1 FROM follows WHERE follower_id = ? AND following_id = users.id) THEN 1 ELSE 0 END AS is_following
+    FROM users WHERE users.id <> ? ORDER BY follower_count DESC, users.name ASC`).all(viewerId ?? "", viewerId ?? "") as Array<{
+      id: string; name: string; handle: string; affinity: number; follower_count: number; is_following: number;
+    }>;
+}
+
+export function toggleFollow(followerId: string, followingId: string) {
+  if (followerId === followingId) return null;
+  const target = database.prepare("SELECT id FROM users WHERE id = ?").get(followingId) as { id: string } | undefined;
+  if (!target) return null;
+  const existing = database.prepare("SELECT follower_id FROM follows WHERE follower_id = ? AND following_id = ?").get(followerId, followingId);
+  if (existing) database.prepare("DELETE FROM follows WHERE follower_id = ? AND following_id = ?").run(followerId, followingId);
+  else database.prepare("INSERT INTO follows (follower_id, following_id, created_at) VALUES (?, ?, ?)").run(followerId, followingId, new Date().toISOString());
+  const count = database.prepare("SELECT COUNT(*) AS count FROM follows WHERE following_id = ?").get(followingId) as { count: number };
+  return { userId: followingId, following: !existing, followerCount: Number(count.count) };
+}

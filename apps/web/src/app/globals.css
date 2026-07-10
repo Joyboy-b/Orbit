@@ -627,3 +627,90 @@ button:disabled {
     flex-direction: column;
   }
 }
+
+.discover-view {
+  display: grid;
+  gap: 18px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.section-heading h1 {
+  margin: 4px 0 6px;
+  font-size: 28px;
+}
+
+.section-heading p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.eyebrow {
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.directory-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.directory-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.directory-avatar {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: white;
+  background: var(--ink);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.directory-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.directory-copy p {
+  margin: 8px 0;
+  color: var(--muted);
+  line-height: 1.4;
+  font-size: 14px;
+}
+
+.directory-card .primary-button,
+.directory-card .secondary-button {
+  min-height: 36px;
+  align-self: center;
+  padding: 0 12px;
+}
+
+@media (max-width: 720px) {
+  .directory-grid {
+    grid-template-columns: 1fr;
+  }
+}

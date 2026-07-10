@@ -20,6 +20,8 @@ The web application exposes typed route handlers for the demo:
 - `GET /api/feed?mode=ranked|latest` returns feed posts with ranking explanations and viewer reaction state.
 - `POST /api/posts` validates and creates a post.
 - `POST /api/posts/:postId/reactions` toggles a viewer reaction and returns the authoritative count.
+- `GET /api/discover` returns people ranked by follower count and viewer follow state.
+- `POST /api/users/:userId/follow` toggles a follow relationship with a unique composite key.
 
 The current repository uses a local SQLite database created automatically at `apps/web/data/orbit.db`. The route handlers depend on a small feed-store interface, so a PostgreSQL implementation can replace it without changing the client-facing contract.
 ## Data Model

@@ -44,3 +44,8 @@ export type FeedPost = RankedPost & {
 };
 
 export type FeedMode = "ranked" | "latest";
+
+export type DiscoverUser = User & {
+  followerCount: number;
+  isFollowing: boolean;
+};

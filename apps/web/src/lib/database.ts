@@ -59,11 +59,18 @@ function createDatabase() {
       post_id TEXT NOT NULL, created_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+    );    CREATE TABLE IF NOT EXISTS follows (
+      follower_id TEXT NOT NULL, following_id TEXT NOT NULL, created_at TEXT NOT NULL,
+      PRIMARY KEY (follower_id, following_id),
+      CHECK (follower_id <> following_id),
+      FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE
     );
     CREATE INDEX IF NOT EXISTS posts_author_created_at ON posts(author_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS posts_community_created_at ON posts(community_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS reactions_post_id ON reactions(post_id);
     CREATE INDEX IF NOT EXISTS comments_post_created_at ON comments(post_id, created_at);
+    CREATE INDEX IF NOT EXISTS follows_following_id ON follows(following_id);
   `);
 
   const passwordHash = bcrypt.hashSync("orbit-demo-2026", 12);
