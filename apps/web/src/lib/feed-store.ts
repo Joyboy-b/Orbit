@@ -95,7 +95,22 @@ export function toggleFollow(followerId: string, followingId: string) {
   if (!target) return null;
   const existing = database.prepare("SELECT follower_id FROM follows WHERE follower_id = ? AND following_id = ?").get(followerId, followingId);
   if (existing) database.prepare("DELETE FROM follows WHERE follower_id = ? AND following_id = ?").run(followerId, followingId);
-  else database.prepare("INSERT INTO follows (follower_id, following_id, created_at) VALUES (?, ?, ?)").run(followerId, followingId, new Date().toISOString());
+  else {
+    database.prepare("INSERT INTO follows (follower_id, following_id, created_at) VALUES (?, ?, ?)").run(followerId, followingId, new Date().toISOString());
+    database.prepare("INSERT INTO notifications (id, recipient_id, actor_id, kind, created_at, read_at) VALUES (?, ?, ?, ?, ?, NULL)").run(`n-${randomUUID()}`, followingId, followerId, "follow", new Date().toISOString());
+  }
   const count = database.prepare("SELECT COUNT(*) AS count FROM follows WHERE following_id = ?").get(followingId) as { count: number };
   return { userId: followingId, following: !existing, followerCount: Number(count.count) };
+}
+export function getNotifications(userId: string) {
+  return database.prepare(`SELECT notifications.id, notifications.kind, notifications.created_at, notifications.read_at,
+    users.name AS actor_name, users.handle AS actor_handle
+    FROM notifications JOIN users ON users.id = notifications.actor_id
+    WHERE notifications.recipient_id = ? ORDER BY notifications.created_at DESC LIMIT 50`).all(userId) as Array<{
+      id: string; kind: "follow"; created_at: string; read_at: string | null; actor_name: string; actor_handle: string;
+    }>;
+}
+
+export function markNotificationsRead(userId: string) {
+  database.prepare("UPDATE notifications SET read_at = ? WHERE recipient_id = ? AND read_at IS NULL").run(new Date().toISOString(), userId);
 }

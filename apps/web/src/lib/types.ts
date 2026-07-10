@@ -49,3 +49,11 @@ export type DiscoverUser = User & {
   followerCount: number;
   isFollowing: boolean;
 };
+export type NotificationItem = {
+  id: string;
+  kind: "follow";
+  actorName: string;
+  actorHandle: string;
+  createdAt: string;
+  readAt: string | null;
+};

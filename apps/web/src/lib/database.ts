@@ -70,7 +70,14 @@ function createDatabase() {
     CREATE INDEX IF NOT EXISTS posts_community_created_at ON posts(community_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS reactions_post_id ON reactions(post_id);
     CREATE INDEX IF NOT EXISTS comments_post_created_at ON comments(post_id, created_at);
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY, recipient_id TEXT NOT NULL, actor_id TEXT NOT NULL,
+      kind TEXT NOT NULL, created_at TEXT NOT NULL, read_at TEXT,
+      FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE
+    );
     CREATE INDEX IF NOT EXISTS follows_following_id ON follows(following_id);
+    CREATE INDEX IF NOT EXISTS notifications_recipient_created_at ON notifications(recipient_id, created_at DESC);
   `);
 
   const passwordHash = bcrypt.hashSync("orbit-demo-2026", 12);

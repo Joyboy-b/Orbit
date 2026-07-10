@@ -6,7 +6,7 @@ import {
   Bell, Bookmark, Compass, Heart, Home, Image as ImageIcon, LoaderCircle,
   MessageCircle, Repeat2, Search, Send, Sparkles, Users, Video
 } from "lucide-react";
-import type { Community, DiscoverUser, FeedMode, FeedPost, User } from "@/lib/types";
+import type { Community, DiscoverUser, FeedMode, FeedPost, NotificationItem, User } from "@/lib/types";
 
 type Section = "home" | "discover" | "communities" | "notifications" | "saved";
 
@@ -32,6 +32,8 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
   const [notice, setNotice] = useState<string | null>(null);
   const [discoverUsers, setDiscoverUsers] = useState<DiscoverUser[]>([]);
   const [isDiscoverLoading, setIsDiscoverLoading] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
 
   const userById = useMemo(() => {
     const currentUser: User = { ...viewer, followers: 0, following: 0, affinity: 1 };
@@ -64,6 +66,26 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
     return () => { active = false; };
   }, [section]);
 
+  useEffect(() => {
+    if (section !== "notifications" || !sessionUser) return;
+    let active = true;    fetch("/api/notifications")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Unable to load notifications.");
+        return (await response.json()) as { notifications: NotificationItem[] };
+      })
+      .then((payload) => { if (active) setNotifications(payload.notifications); })
+      .catch((error) => { if (active) setNotice(error instanceof Error ? error.message : "Unable to load notifications."); })
+      .finally(() => { if (active) setIsNotificationsLoading(false); });
+    return () => { active = false; };
+  }, [section, sessionUser]);
+
+  async function markAllNotificationsRead() {
+    if (!sessionUser) { setNotice("Log in to manage notifications."); return; }
+    const response = await fetch("/api/notifications/read", { method: "POST" });
+    if (!response.ok) { setNotice("Unable to update notifications."); return; }
+    setNotifications((current) => current.map((item) => ({ ...item, readAt: item.readAt ?? new Date().toISOString() })));
+    setNotice("Notifications marked as read.");
+  }
   async function toggleFollow(candidate: DiscoverUser) {
     if (!sessionUser) { setNotice("Log in to follow people."); return; }
     setDiscoverUsers((current) => current.map((user) => user.id === candidate.id ? { ...user, isFollowing: !user.isFollowing, followerCount: user.followerCount + (user.isFollowing ? -1 : 1) } : user));
@@ -91,6 +113,7 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
 
   function chooseSection(nextSection: Section) {
     if (nextSection === "discover") setIsDiscoverLoading(true);
+    if (nextSection === "notifications") setIsNotificationsLoading(true);
     setSection(nextSection);
     setNotice(nextSection === "saved" ? "Showing posts you saved." : null);
   }
@@ -194,7 +217,18 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
           </section>
         ) : null}
 
-        {section !== "discover" ? (<><form className="composer" onSubmit={publishPost} aria-label="Create post">
+        {section === "notifications" ? (
+          <section className="notifications-view" aria-label="Notifications">
+            <div className="section-heading"><div><span className="eyebrow">Activity</span><h1>Notifications</h1><p>Keep up with the people joining your orbit.</p></div><Bell size={24} /></div>
+            <div className="notification-toolbar"><span className="muted">{notifications.filter((item) => !item.readAt).length} unread</span><button className="secondary-button" type="button" onClick={markAllNotificationsRead}>Mark all read</button></div>
+            {isNotificationsLoading ? <div className="feed-state"><LoaderCircle className="spin" size={20} /> Loading notifications</div> : null}
+            {!isNotificationsLoading && !sessionUser ? <div className="feed-state">Log in to view your notifications.</div> : null}
+            {!isNotificationsLoading && sessionUser && notifications.length === 0 ? <div className="feed-state">You are all caught up.</div> : null}
+            <div className="notification-list">{notifications.map((item) => <article className={`notification-item ${item.readAt ? "read" : "unread"}`} key={item.id}><div className="notification-icon"><Users size={18} /></div><div><strong>{item.actorName}</strong> started following you.<span className="muted">@{item.actorHandle} Â· {new Date(item.createdAt).toLocaleString()}</span></div></article>)}</div>
+          </section>
+        ) : null}
+
+        {section !== "discover" && section !== "notifications" ? (<><form className="composer" onSubmit={publishPost} aria-label="Create post">
           <textarea value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={500} disabled={!sessionUser} placeholder={sessionUser ? "Share a systems insight, product idea, or launch note" : "Log in to share a systems insight"} />
           <div className="composer-actions"><div className="tool-row"><button className="icon-button" type="button" title="Add image" onClick={() => showMediaMessage("image")}><ImageIcon size={18} /></button><button className="icon-button" type="button" title="Add video" onClick={() => showMediaMessage("video")}><Video size={18} /></button><span className="composer-context"><Users size={16} /> Systems Design</span></div><button className="primary-button" type="submit" disabled={!draft.trim() || isPublishing || !sessionUser}>{isPublishing ? <LoaderCircle className="spin" size={18} /> : <Send size={18} />}Publish</button></div>
           <div className="composer-footer"><span>{draft.length}/500</span>{notice ? <span role="status">{notice}</span> : null}</div>
@@ -206,10 +240,10 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
           {visiblePosts.map((post) => {
             const author = userById.get(post.authorId); const community = post.communityId ? communityById.get(post.communityId) : undefined;
             return <article className="post" key={post.id}>
-              <header className="post-header"><div className="avatar">{author?.name.slice(0, 1)}</div><div><strong>{author?.name}</strong><div className="handle">@{author?.handle} ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {community?.name ?? "Orbit"}</div></div><div className="score-pill"><Sparkles size={14} /> {post.score.toFixed(0)}</div></header>
+              <header className="post-header"><div className="avatar">{author?.name.slice(0, 1)}</div><div><strong>{author?.name}</strong><div className="handle">@{author?.handle} ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {community?.name ?? "Orbit"}</div></div><div className="score-pill"><Sparkles size={14} /> {post.score.toFixed(0)}</div></header>
               <p className="post-body">{post.body}</p>
               {post.media ? <div className="media"><strong>{post.media.title}</strong><span>{post.media.type.toUpperCase()} preview</span></div> : null}
-              <div className="explain">Ranked by {post.explanation.join(" ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ")}</div>
+              <div className="explain">Ranked by {post.explanation.join(" ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ")}</div>
               <footer className="post-actions"><div className="metrics"><span>{post.reactions.toLocaleString()} likes</span><span>{post.comments.toLocaleString()} comments</span><span>{post.reposts.toLocaleString()} reposts</span></div><div className="tool-row"><button className={`icon-button ${post.reacted ? "reacted" : ""}`} onClick={() => toggleLike(post)} disabled={pendingActions.has(post.id)} type="button" title={post.reacted ? "Remove like" : "Like"} aria-pressed={post.reacted}><Heart size={18} fill={post.reacted ? "currentColor" : "none"} /></button><button className="icon-button" type="button" title="Comment" onClick={() => setCommentingPost(commentingPost === post.id ? null : post.id)}><MessageCircle size={18} /></button><button className={`icon-button ${post.reposted ? "reacted" : ""}`} type="button" title="Repost" onClick={() => toggleRepost(post)} disabled={pendingActions.has(post.id)}><Repeat2 size={18} /></button><button className={`icon-button ${post.saved ? "reacted" : ""}`} type="button" title={post.saved ? "Remove save" : "Save"} onClick={() => toggleBookmark(post)} disabled={pendingActions.has(post.id)}><Bookmark size={18} fill={post.saved ? "currentColor" : "none"} /></button></div></footer>
               {commentingPost === post.id ? <form className="comment-form" onSubmit={(event) => submitComment(event, post.id)}><input value={commentDraft} onChange={(event) => setCommentDraft(event.target.value)} maxLength={280} autoFocus placeholder={sessionUser ? "Add a thoughtful comment" : "Log in to comment"} disabled={!sessionUser} /><button className="primary-button" type="submit" disabled={!sessionUser || !commentDraft.trim()}><Send size={16} /> Comment</button></form> : null}
             </article>;
