@@ -4,14 +4,14 @@ import { chronologicalPosts, rankPosts } from "./ranking";
 import type { FeedMode, FeedPost, Post } from "./types";
 
 type FeedRow = {
-  id: string; body: string; visibility: Post["visibility"]; media_type: "image" | "link" | "video" | null; media_title: string | null;
+  id: string; body: string; visibility: Post["visibility"]; media_type: "image" | "link" | "video" | null; media_title: string | null; media_url: string | null;
   created_at: string; author_id: string; community_id: string | null; author_name: string; author_handle: string; author_affinity: number;
   community_name: string | null; reaction_count: number; comment_count: number; repost_count: number; save_count: number;
   reacted: number; reposted: number; saved: number;
 };
 
 function rowsFor(viewerId?: string) {
-  return database.prepare(`SELECT posts.id, posts.body, posts.visibility, posts.media_type, posts.media_title, posts.created_at,
+  return database.prepare(`SELECT posts.id, posts.body, posts.visibility, posts.media_type, posts.media_title, posts.media_url, posts.created_at,
     posts.author_id, posts.community_id, users.name AS author_name, users.handle AS author_handle, users.affinity AS author_affinity,
     communities.name AS community_name,
     (SELECT COUNT(*) FROM reactions WHERE reactions.post_id = posts.id) AS reaction_count,
@@ -31,7 +31,7 @@ export function getFeed(mode: FeedMode, viewerId?: string): FeedPost[] {
   const extras = new Map(rows.map((row) => [row.id, row]));
   const candidates = rows.map((row) => ({
     id: row.id, authorId: row.author_id, communityId: row.community_id ?? undefined, body: row.body, createdAt: row.created_at,
-    visibility: row.visibility, media: row.media_type && row.media_title ? { type: row.media_type, title: row.media_title } : undefined,
+    visibility: row.visibility, media: row.media_type && row.media_title ? { type: row.media_type, title: row.media_title, url: row.media_url ?? undefined } : undefined,
     reactions: Number(row.reaction_count), comments: Number(row.comment_count), reposts: Number(row.repost_count), saves: Number(row.save_count),
     authorAffinity: row.author_affinity, communityName: row.community_name ?? undefined
   }));
@@ -42,10 +42,12 @@ export function getFeed(mode: FeedMode, viewerId?: string): FeedPost[] {
   });
 }
 
-export function createPost(userId: string, body: string): FeedPost {
+export function createPost(userId: string, body: string, media?: { type: "image" | "video"; title: string; url: string }, communityId = "c-systems"): FeedPost {
   const id = `p-${randomUUID()}`;
-  database.prepare("INSERT INTO posts (id, body, visibility, created_at, author_id, community_id) VALUES (?, ?, ?, ?, ?, ?)")
-    .run(id, body, "public", new Date().toISOString(), userId, "c-systems");
+  const community = database.prepare("SELECT id FROM communities WHERE id = ?").get(communityId) as { id: string } | undefined;
+  const selectedCommunityId = community?.id ?? "c-systems";
+  database.prepare("INSERT INTO posts (id, body, visibility, media_type, media_title, media_url, created_at, author_id, community_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    .run(id, body, "public", media?.type ?? null, media?.title ?? null, media?.url ?? null, new Date().toISOString(), userId, selectedCommunityId);
   return getFeed("ranked", userId).find((post) => post.id === id)!;
 }
 

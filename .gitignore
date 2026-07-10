@@ -14,3 +14,5 @@ __pycache__/
 
 # Local SQLite state
 apps/web/data/
+
+apps/web/public/uploads/

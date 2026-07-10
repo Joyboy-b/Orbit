@@ -25,6 +25,7 @@ export type Post = {
   media?: {
     type: "image" | "link" | "video";
     title: string;
+    url?: string;
   };
   reactions: number;
   comments: number;
