@@ -3,7 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Orbit",
-  description: "A scalable social feed platform with ranking and graph systems."
+  description: "A scalable social feed platform with ranking and graph systems.",
+  icons: { icon: "/icon.svg?v=2" }
 };
 
 export default function RootLayout({
