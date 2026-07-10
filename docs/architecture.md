@@ -13,6 +13,15 @@ Orbit is a social platform with:
 - notifications
 - discovery recommendations
 
+## API Boundary
+
+The web application exposes typed route handlers for the demo:
+
+- `GET /api/feed?mode=ranked|latest` returns feed posts with ranking explanations and viewer reaction state.
+- `POST /api/posts` validates and creates a post.
+- `POST /api/posts/:postId/reactions` toggles a viewer reaction and returns the authoritative count.
+
+The current repository is in-memory to keep local setup frictionless. The route handlers depend on a small feed-store interface, so a PostgreSQL implementation can replace it without changing the client-facing contract.
 ## Data Model
 
 Core entities:

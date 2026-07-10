@@ -1,9 +1,9 @@
 import { communities, users } from "./seed";
 import type { Post, RankedPost } from "./types";
 
-const now = new Date("2026-07-09T14:00:00.000Z").getTime();
-
 export function rankPosts(posts: Post[]): RankedPost[] {
+  const now = Date.now();
+
   return posts
     .map((post) => {
       const author = users.find((user) => user.id === post.authorId);

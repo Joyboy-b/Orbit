@@ -36,3 +36,9 @@ export type RankedPost = Post & {
   score: number;
   explanation: string[];
 };
+
+export type FeedPost = RankedPost & {
+  reacted: boolean;
+};
+
+export type FeedMode = "ranked" | "latest";

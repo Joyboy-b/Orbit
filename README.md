@@ -19,6 +19,18 @@
 
 The project is built around a simple idea: the interesting part of a social app is not only the interface. It is the social graph, eligibility rules, ranking signals, cache behavior, asynchronous work, and the decisions that keep a feed responsive as the graph gets large.
 
+## Working API Surface
+
+Orbit exposes a small typed Next.js API boundary for the demo, keeping product mutations out of the UI layer:
+
+| Route | Behavior |
+| --- | --- |
+| `GET /api/feed?mode=ranked|latest` | Returns ordered posts, score explanations, and viewer reaction state. |
+| `POST /api/posts` | Validates and creates a post (1-500 characters). |
+| `POST /api/posts/:postId/reactions` | Toggles the viewer reaction and returns the authoritative count. |
+
+The current store is intentionally in-memory so the repository runs with no services. Its interface is designed to be replaced by a PostgreSQL-backed adapter without changing the client contract.
+
 ## What It Includes
 
 <table>
