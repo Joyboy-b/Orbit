@@ -143,7 +143,7 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
       <aside className="sidebar">
         <div className="brand"><div className="brand-mark"><Sparkles size={19} /></div><span>Orbit</span></div>
         <nav className="nav" aria-label="Primary">
-          {navItems.map(({ id, label, icon: Icon }) => <button key={id} className={section === id ? "active" : ""} title={label} onClick={() => chooseSection(id)}><Icon size={20} /><span>{label}</span></button>)}
+          {navItems.map(({ id, label, icon: Icon }) => <button type="button" key={id} className={section === id ? "active" : ""} title={label} onClick={() => chooseSection(id)}><Icon size={20} /><span>{label}</span></button>)}
         </nav>
       </aside>
 
@@ -151,7 +151,7 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
         <div className="topbar">
           <label className="search"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search posts, people, communities" aria-label="Search posts, people, communities" /></label>
           <div className="topbar-actions">
-            <div className="segmented" aria-label="Feed mode"><button className={mode === "ranked" ? "active" : ""} onClick={() => loadFeed("ranked")}>Ranked</button><button className={mode === "latest" ? "active" : ""} onClick={() => loadFeed("latest")}>Latest</button></div>
+            <div className="segmented" aria-label="Feed mode"><button type="button" className={mode === "ranked" ? "active" : ""} onClick={() => loadFeed("ranked")}>Ranked</button><button type="button" className={mode === "latest" ? "active" : ""} onClick={() => loadFeed("latest")}>Latest</button></div>
             {sessionUser ? <button className="secondary-button" type="button" onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.assign("/"); }}>Log out</button> : <div className="auth-actions"><Link href="/login">Log in</Link><Link className="primary-button" href="/signup">Sign up</Link></div>}
           </div>
         </div>
@@ -168,10 +168,10 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
           {visiblePosts.map((post) => {
             const author = userById.get(post.authorId); const community = post.communityId ? communityById.get(post.communityId) : undefined;
             return <article className="post" key={post.id}>
-              <header className="post-header"><div className="avatar">{author?.name.slice(0, 1)}</div><div><strong>{author?.name}</strong><div className="handle">@{author?.handle} · {community?.name ?? "Orbit"}</div></div><div className="score-pill"><Sparkles size={14} /> {post.score.toFixed(0)}</div></header>
+              <header className="post-header"><div className="avatar">{author?.name.slice(0, 1)}</div><div><strong>{author?.name}</strong><div className="handle">@{author?.handle} Â· {community?.name ?? "Orbit"}</div></div><div className="score-pill"><Sparkles size={14} /> {post.score.toFixed(0)}</div></header>
               <p className="post-body">{post.body}</p>
               {post.media ? <div className="media"><strong>{post.media.title}</strong><span>{post.media.type.toUpperCase()} preview</span></div> : null}
-              <div className="explain">Ranked by {post.explanation.join(" · ")}</div>
+              <div className="explain">Ranked by {post.explanation.join(" Â· ")}</div>
               <footer className="post-actions"><div className="metrics"><span>{post.reactions.toLocaleString()} likes</span><span>{post.comments.toLocaleString()} comments</span><span>{post.reposts.toLocaleString()} reposts</span></div><div className="tool-row"><button className={`icon-button ${post.reacted ? "reacted" : ""}`} onClick={() => toggleLike(post)} disabled={pendingActions.has(post.id)} type="button" title={post.reacted ? "Remove like" : "Like"} aria-pressed={post.reacted}><Heart size={18} fill={post.reacted ? "currentColor" : "none"} /></button><button className="icon-button" type="button" title="Comment" onClick={() => setCommentingPost(commentingPost === post.id ? null : post.id)}><MessageCircle size={18} /></button><button className={`icon-button ${post.reposted ? "reacted" : ""}`} type="button" title="Repost" onClick={() => toggleRepost(post)} disabled={pendingActions.has(post.id)}><Repeat2 size={18} /></button><button className={`icon-button ${post.saved ? "reacted" : ""}`} type="button" title={post.saved ? "Remove save" : "Save"} onClick={() => toggleBookmark(post)} disabled={pendingActions.has(post.id)}><Bookmark size={18} fill={post.saved ? "currentColor" : "none"} /></button></div></footer>
               {commentingPost === post.id ? <form className="comment-form" onSubmit={(event) => submitComment(event, post.id)}><input value={commentDraft} onChange={(event) => setCommentDraft(event.target.value)} maxLength={280} autoFocus placeholder={sessionUser ? "Add a thoughtful comment" : "Log in to comment"} disabled={!sessionUser} /><button className="primary-button" type="submit" disabled={!sessionUser || !commentDraft.trim()}><Send size={16} /> Comment</button></form> : null}
             </article>;
