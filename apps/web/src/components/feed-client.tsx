@@ -27,6 +27,7 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
   const [posts, setPosts] = useState(initialPosts);
   const [draft, setDraft] = useState("");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [communityId, setCommunityId] = useState("c-systems");
   const [query, setQuery] = useState("");
   const [commentingPost, setCommentingPost] = useState<string | null>(null);
   const [commentDraft, setCommentDraft] = useState("");
@@ -131,11 +132,13 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
     try {
       const formData = new FormData();
       formData.append("body", body);
+      formData.append("communityId", communityId);
       if (mediaFile) formData.append("media", mediaFile);
       const response = await fetch("/api/posts", { method: "POST", body: formData });
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(payload.error ?? "Unable to publish post.");
-      setDraft(""); setMediaFile(null); setNotice("Post published to Systems Design."); await loadFeed(mode);
+      const communityName = communityById.get(communityId)?.name ?? "Systems Design";
+      setDraft(""); setMediaFile(null); setNotice("Post published to " + communityName + "."); await loadFeed(mode);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Unable to publish post.");
     } finally { setIsPublishing(false); }
@@ -239,7 +242,7 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
 
         {section !== "discover" && section !== "notifications" ? (<><form className="composer" onSubmit={publishPost} aria-label="Create post">
           <textarea value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={500} disabled={!sessionUser} placeholder={sessionUser ? "Share a systems insight, product idea, or launch note" : "Log in to share a systems insight"} />
-          <div className="composer-actions"><div className="tool-row"><label className="icon-button" title="Add image"><input className="media-input" type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={selectMedia} disabled={!sessionUser} /><ImageIcon size={18} /></label><label className="icon-button" title="Add video"><input className="media-input" type="file" accept="video/mp4,video/webm,video/quicktime" onChange={selectMedia} disabled={!sessionUser} /><Video size={18} /></label><span className="composer-context"><Users size={16} /> Systems Design</span></div><button className="primary-button" type="submit" disabled={(!draft.trim() && !mediaFile) || isPublishing || !sessionUser}>{isPublishing ? <LoaderCircle className="spin" size={18} /> : <Send size={18} />}Publish</button></div>
+          <div className="composer-actions"><div className="tool-row"><label className="icon-button" title="Add image"><input className="media-input" type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={selectMedia} disabled={!sessionUser} /><ImageIcon size={18} /></label><label className="icon-button" title="Add video"><input className="media-input" type="file" accept="video/mp4,video/webm,video/quicktime" onChange={selectMedia} disabled={!sessionUser} /><Video size={18} /></label><label className="composer-context" title="Choose community"><Users size={16} /><select value={communityId} onChange={(event) => setCommunityId(event.target.value)} disabled={!sessionUser} aria-label="Choose community">{communities.map((community) => <option value={community.id} key={community.id}>{community.name}</option>)}</select></label></div><button className="primary-button" type="submit" disabled={(!draft.trim() && !mediaFile) || isPublishing || !sessionUser}>{isPublishing ? <LoaderCircle className="spin" size={18} /> : <Send size={18} />}Publish</button></div>
           <div className="composer-footer"><span>{draft.length}/500</span>{mediaFile ? <span className="selected-media">Attached: {mediaFile.name}</span> : null}{notice ? <span role="status">{notice}</span> : null}</div>
         </form>
 

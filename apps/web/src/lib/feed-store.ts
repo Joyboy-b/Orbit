@@ -42,10 +42,12 @@ export function getFeed(mode: FeedMode, viewerId?: string): FeedPost[] {
   });
 }
 
-export function createPost(userId: string, body: string, media?: { type: "image" | "video"; title: string; url: string }): FeedPost {
+export function createPost(userId: string, body: string, media?: { type: "image" | "video"; title: string; url: string }, communityId = "c-systems"): FeedPost {
   const id = `p-${randomUUID()}`;
+  const community = database.prepare("SELECT id FROM communities WHERE id = ?").get(communityId) as { id: string } | undefined;
+  const selectedCommunityId = community?.id ?? "c-systems";
   database.prepare("INSERT INTO posts (id, body, visibility, media_type, media_title, media_url, created_at, author_id, community_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
-    .run(id, body, "public", media?.type ?? null, media?.title ?? null, media?.url ?? null, new Date().toISOString(), userId, "c-systems");
+    .run(id, body, "public", media?.type ?? null, media?.title ?? null, media?.url ?? null, new Date().toISOString(), userId, selectedCommunityId);
   return getFeed("ranked", userId).find((post) => post.id === id)!;
 }
 
