@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import {
   Bell, Bookmark, Compass, Heart, Home, Image as ImageIcon, LoaderCircle,
   MessageCircle, Repeat2, Search, Send, Sparkles, Users, Video
@@ -25,6 +26,7 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
   const [section, setSection] = useState<Section>("home");
   const [posts, setPosts] = useState(initialPosts);
   const [draft, setDraft] = useState("");
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [query, setQuery] = useState("");
   const [commentingPost, setCommentingPost] = useState<string | null>(null);
   const [commentDraft, setCommentDraft] = useState("");
@@ -124,13 +126,16 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
     event.preventDefault();
     if (!sessionUser) { setNotice("Log in to publish a post."); return; }
     const body = draft.trim();
-    if (!body || isPublishing) return;
+    if ((!body && !mediaFile) || isPublishing) return;
     setIsPublishing(true); setNotice(null);
     try {
-      const response = await fetch("/api/posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body }) });
+      const formData = new FormData();
+      formData.append("body", body);
+      if (mediaFile) formData.append("media", mediaFile);
+      const response = await fetch("/api/posts", { method: "POST", body: formData });
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(payload.error ?? "Unable to publish post.");
-      setDraft(""); setNotice("Post published to Systems Design."); await loadFeed(mode);
+      setDraft(""); setMediaFile(null); setNotice("Post published to Systems Design."); await loadFeed(mode);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Unable to publish post.");
     } finally { setIsPublishing(false); }
@@ -182,8 +187,10 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
     setPosts((current) => current.map((post) => post.id === postId ? { ...post, comments: post.comments + 1 } : post));
   }
 
-  function showMediaMessage(kind: "image" | "video") {
-    setNotice(`${kind === "image" ? "Image" : "Video"} uploads are ready for the next media-storage milestone.`);
+  function selectMedia(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setMediaFile(file);
+    if (file) setNotice(`${file.name} selected.`);
   }
 
   const navItems: { id: Section; label: string; icon: typeof Home }[] = [
@@ -232,8 +239,8 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
 
         {section !== "discover" && section !== "notifications" ? (<><form className="composer" onSubmit={publishPost} aria-label="Create post">
           <textarea value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={500} disabled={!sessionUser} placeholder={sessionUser ? "Share a systems insight, product idea, or launch note" : "Log in to share a systems insight"} />
-          <div className="composer-actions"><div className="tool-row"><button className="icon-button" type="button" title="Add image" onClick={() => showMediaMessage("image")}><ImageIcon size={18} /></button><button className="icon-button" type="button" title="Add video" onClick={() => showMediaMessage("video")}><Video size={18} /></button><span className="composer-context"><Users size={16} /> Systems Design</span></div><button className="primary-button" type="submit" disabled={!draft.trim() || isPublishing || !sessionUser}>{isPublishing ? <LoaderCircle className="spin" size={18} /> : <Send size={18} />}Publish</button></div>
-          <div className="composer-footer"><span>{draft.length}/500</span>{notice ? <span role="status">{notice}</span> : null}</div>
+          <div className="composer-actions"><div className="tool-row"><label className="icon-button" title="Add image"><input className="media-input" type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={selectMedia} disabled={!sessionUser} /><ImageIcon size={18} /></label><label className="icon-button" title="Add video"><input className="media-input" type="file" accept="video/mp4,video/webm,video/quicktime" onChange={selectMedia} disabled={!sessionUser} /><Video size={18} /></label><span className="composer-context"><Users size={16} /> Systems Design</span></div><button className="primary-button" type="submit" disabled={(!draft.trim() && !mediaFile) || isPublishing || !sessionUser}>{isPublishing ? <LoaderCircle className="spin" size={18} /> : <Send size={18} />}Publish</button></div>
+          <div className="composer-footer"><span>{draft.length}/500</span>{mediaFile ? <span className="selected-media">Attached: {mediaFile.name}</span> : null}{notice ? <span role="status">{notice}</span> : null}</div>
         </form>
 
         <section className="feed" aria-label={`${mode} feed`} aria-busy={isLoading}>
@@ -244,9 +251,9 @@ export function FeedClient({ initialPosts, viewer, users, communities, sessionUs
             return <article className="post" key={post.id}>
               <header className="post-header"><div className="avatar">{author?.name.slice(0, 1)}</div><div><strong>{author?.name}</strong><div className="handle">@{author?.handle} - {community?.name ?? "Orbit"}</div></div><div className="score-pill"><Sparkles size={14} /> {post.score.toFixed(0)}</div></header>
               <p className="post-body">{post.body}</p>
-              {post.media ? <div className="media"><strong>{post.media.title}</strong><span>{post.media.type.toUpperCase()} preview</span></div> : null}
+              {post.media ? <div className={`media ${post.media.url ? "media-with-file" : ""}`}>{post.media.url && post.media.type === "image" ? <Image className="media-image" src={post.media.url} alt={post.media.title} width={1200} height={800} unoptimized /> : null}{post.media.url && post.media.type === "video" ? <video className="media-video" src={post.media.url} controls preload="metadata" /> : null}<div><strong>{post.media.title}</strong><span>{post.media.type.toUpperCase()} preview</span></div></div> : null}
               <div className="explain">Ranked by {post.explanation.join(" | ")}</div>
-              <footer className="post-actions"><div className="metrics"><span>{post.reactions.toLocaleString()} likes</span><span>{post.comments.toLocaleString()} comments</span><span>{post.reposts.toLocaleString()} reposts</span></div><div className="tool-row"><button className={`icon-button ${post.reacted ? "reacted" : ""}`} onClick={() => toggleLike(post)} disabled={pendingActions.has(post.id)} type="button" title={post.reacted ? "Remove like" : "Like"} aria-pressed={post.reacted}><Heart size={18} fill={post.reacted ? "currentColor" : "none"} /></button><button className="icon-button" type="button" title="Comment" onClick={() => setCommentingPost(commentingPost === post.id ? null : post.id)}><MessageCircle size={18} /></button><button className={`icon-button ${post.reposted ? "reacted" : ""}`} type="button" title="Repost" onClick={() => toggleRepost(post)} disabled={pendingActions.has(post.id)}><Repeat2 size={18} /></button><button className={`icon-button ${post.saved ? "reacted" : ""}`} type="button" title={post.saved ? "Remove save" : "Save"} onClick={() => toggleBookmark(post)} disabled={pendingActions.has(post.id)}><Bookmark size={18} fill={post.saved ? "currentColor" : "none"} /></button></div></footer>
+              <footer className="post-actions"><div className="metrics"><span>{post.reactions.toLocaleString()} likes</span><span>{post.comments.toLocaleString()} comments</span><span>{post.reposts.toLocaleString()} reposts</span></div><div className="tool-row"><button className={`icon-button ${post.reacted ? "reacted" : ""}`} onClick={() => toggleLike(post)} disabled={pendingActions.has(post.id)} type="button" title={post.reacted ? "Remove like" : "Like"} aria-pressed={post.reacted}><Heart size={18} fill={post.reacted ? "currentColor" : "none"} /></button><button className="icon-button" type="button" title="Comment" onClick={() => setCommentingPost(commentingPost === post.id ? null : post.id)}><MessageCircle size={18} /></button><button className={`icon-button ${post.reposted ? "reacted" : ""}`} type="button" title={post.reposted ? "Remove repost" : "Repost"} aria-pressed={post.reposted} onClick={() => toggleRepost(post)} disabled={pendingActions.has(post.id)}><Repeat2 size={18} /></button><button className={`icon-button ${post.saved ? "reacted" : ""}`} type="button" title={post.saved ? "Remove save" : "Save"} onClick={() => toggleBookmark(post)} disabled={pendingActions.has(post.id)}><Bookmark size={18} fill={post.saved ? "currentColor" : "none"} /></button></div></footer>
               {commentingPost === post.id ? <form className="comment-form" onSubmit={(event) => submitComment(event, post.id)}><input value={commentDraft} onChange={(event) => setCommentDraft(event.target.value)} maxLength={280} autoFocus placeholder={sessionUser ? "Add a thoughtful comment" : "Log in to comment"} disabled={!sessionUser} /><button className="primary-button" type="submit" disabled={!sessionUser || !commentDraft.trim()}><Send size={16} /> Comment</button></form> : null}
             </article>;
           })}

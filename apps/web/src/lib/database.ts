@@ -31,7 +31,7 @@ function createDatabase() {
     );
     CREATE TABLE IF NOT EXISTS posts (
       id TEXT PRIMARY KEY, body TEXT NOT NULL, visibility TEXT NOT NULL,
-      media_type TEXT, media_title TEXT, created_at TEXT NOT NULL,
+      media_type TEXT, media_title TEXT, media_url TEXT, created_at TEXT NOT NULL,
       author_id TEXT NOT NULL, community_id TEXT,
       FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE SET NULL
@@ -79,6 +79,15 @@ function createDatabase() {
     CREATE INDEX IF NOT EXISTS follows_following_id ON follows(following_id);
     CREATE INDEX IF NOT EXISTS notifications_recipient_created_at ON notifications(recipient_id, created_at DESC);
   `);
+
+  const postColumns = database.prepare("PRAGMA table_info(posts)").all() as Array<{ name: string }>;
+  if (!postColumns.some((column) => column.name === "media_url")) {
+    try {
+      database.exec("ALTER TABLE posts ADD COLUMN media_url TEXT");
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.includes("duplicate column name: media_url")) throw error;
+    }
+  }
 
   const passwordHash = bcrypt.hashSync("orbit-demo-2026", 12);
   const insertUser = database.prepare(`INSERT OR IGNORE INTO users
