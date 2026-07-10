@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 type AuthMode = "login" | "signup";
 
 export function AuthForm({ mode }: { mode: AuthMode }) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -28,7 +30,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         setError(payload?.error ?? "Something went wrong. Please try again.");
         return;
       }
-      window.location.assign("/");
+      router.replace("/");
+      router.refresh();
     } catch {
       setError("Orbit could not reach the server. Check that the app is running and try again.");
     } finally {
